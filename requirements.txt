@@ -13,3 +13,5 @@ streamlit_extras
 pandas
 requests
 PyMuPDF
+python-docx
+
