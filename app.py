@@ -1,13 +1,12 @@
 import streamlit as st
 import requests
-import os
 import json
 import re
-from dotenv import load_dotenv
 import fitz  # PyMuPDF
 import pandas as pd
-from docx import Document  # NEW import for Word support
+from docx import Document  # Word support
 
+# ----------- File Extraction -----------
 def extract_pdf_text(uploaded_file):
     text = ""
     with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
@@ -30,6 +29,8 @@ def extract_text(uploaded_file):
     else:
         raise Exception("Unsupported file format")
 
+
+# ----------- API CALL -----------
 def get_gemini_response(prompt, api_key):
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
     headers = {
@@ -43,6 +44,7 @@ def get_gemini_response(prompt, api_key):
     response.raise_for_status()
     return response.json()["candidates"][0]["content"]["parts"][0]["text"]
 
+# ----------- Prompt -----------
 def prepare_prompt(resume_text, jd_text, weights, remark_tone):
     tone_instruction = {
         "Professional": "Use a neutral and formal tone.",
@@ -62,7 +64,13 @@ Scoring Logic:
 4. Industry relevance - {weights['industry']}%
 5. Policy Compliance - {weights['policy']}%
 
+Other Rules:
+- Deduct 10% if experience < 2 years.
+- Direct REJECTION if job-hopping <2 years occurred more than twice.
+- Score 0 if working in or ex-JSW, Dulux, Akzo Nobel, Birla Opus.
+- For evaluating colleges/universities use NIRF ranking
 
+Remark Instructions:
 - {tone_instruction.get(remark_tone, "Use a professional tone.")}
 
 Return ONLY JSON:
@@ -82,6 +90,7 @@ Job Description:
 {jd_text}
 """
 
+# ----------- JD Summary Extraction -----------
 def extract_comparison_data(jd_text):
     exp_range = re.search(r"(\d+)\s*(?:to|–|-)\s*(\d+)\s*years", jd_text, re.IGNORECASE)
     if exp_range:
@@ -104,6 +113,7 @@ def extract_comparison_data(jd_text):
 
     return experience, skills, qualification
 
+# ----------- JSON Parsing -----------
 def parse_json_response(text):
     try:
         json_str = re.search(r"\{.*\}", text, re.DOTALL).group()
@@ -111,6 +121,7 @@ def parse_json_response(text):
     except Exception as e:
         raise ValueError(f"❌ Could not parse JSON from Gemini:\n{text[:500]}...")
 
+# ----------- Score Color -----------
 def highlight_score(val):
     try:
         val = int(val)
@@ -123,11 +134,12 @@ def highlight_score(val):
     except:
         return ''
 
+# ----------- MAIN APP -----------
 def main():
-    load_dotenv()
-    api_key = os.getenv("GOOGLE_API_KEY")
-
     st.title("📄 THE HRminator 💥🤖")
+
+    # Load Gemini API Key from Streamlit Secrets
+    api_key = st.secrets["GOOGLE_API_KEY"]
 
     jd = st.text_area("📌 Job Description", placeholder="Paste the job description here...")
 
@@ -143,10 +155,7 @@ def main():
         policy_weight = st.number_input("Policy Compliance %", min_value=0, max_value=100, value=10)
 
     st.markdown("### 💬 Remark Style")
-    remark_tone = st.selectbox(
-        "Choose AI Remark Tone",
-        ["Professional", "Critical", "Blunt"]
-    )
+    remark_tone = st.selectbox("Choose AI Remark Tone", ["Professional", "Critical", "Blunt"])
 
     total = experience_weight + skills_weight + education_weight + industry_weight + policy_weight
     if total != 100:
