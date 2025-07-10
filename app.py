@@ -69,7 +69,7 @@ Other Rules:
 - Direct REJECTION if job-hopping <2 years occurred more than twice.
 - Score 0 if working in or ex-JSW, Dulux, Akzo Nobel, Birla Opus.
 - For evaluating colleges/universities use NIRF ranking
-
+-DO NOT reject any candidate IF he has worked in ASIANPAINTS.
 Remark Instructions:
 - {tone_instruction.get(remark_tone, "Use a professional tone.")}
 
