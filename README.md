@@ -1,2 +1,0 @@
-# HRSBOT
-SMART HR BOT

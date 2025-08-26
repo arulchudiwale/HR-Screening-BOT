@@ -1,0 +1,194 @@
+.results-table-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 40px auto;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 22px 0 rgba(40, 60, 105, 0.11);
+  padding: 40px 36px 36px 36px;
+  overflow-x: auto;
+}
+
+.results-table-title {
+  font-size: 1.4rem;
+  margin-bottom: 24px;
+  font-weight: 600;
+  color: #20325a;
+  letter-spacing: 0.01em;
+}
+
+/* ------------ DOWNLOAD BUTTON --------------- */
+.download-xls-btn {
+  display: inline-block;
+  margin-bottom: 25px;
+  padding: 10px 24px;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.11rem;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 6px rgba(52,82,176,0.08);
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.download-xls-btn:hover,
+.download-xls-btn:focus {
+  background: #1153a9;
+  box-shadow: 0 3px 16px rgba(30,60,160,0.11);
+  outline: none;
+}
+/* ------ END DOWNLOAD BUTTON ------ */
+
+.results-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  font-size: 1.02rem;
+  background: #fcfcff;
+  border-radius: 8px;
+  box-shadow: 0 3px 8px rgba(87, 110, 250, 0.06);
+  overflow: hidden;
+}
+
+.results-table th {
+  background: #f3f6fa;
+  color: #223562;
+  font-weight: 600;
+  padding: 13px 20px;
+  font-size: 1.07em;
+  border-bottom: 2px solid #e0e1ea;
+  text-align: left;
+  min-width: 110px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.22s;
+}
+
+.results-table td {
+  background: #fff;
+  padding: 12px 20px;
+  border-bottom: 1px solid #eff1f7;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 210px;
+  cursor: pointer;
+  transition: background 0.13s;
+}
+.results-table tr:last-child td {
+  border-bottom: none;
+}
+
+.results-table tbody tr:hover {
+  background: #f7fbfe;
+}
+
+.score-cell {
+  font-weight: 700;
+  text-align: center;
+  border-radius: 6px;
+}
+
+.score-accept {
+  color: #219a5a;
+  background: #e9faef;
+}
+
+.score-reject {
+  color: #db3755;
+  background: #fee8ee;
+}
+
+.results-table td:focus {
+  background: #ebf2ff;
+  outline: 2.5px solid #4174c7;
+  outline-offset: -2px;
+}
+
+.results-table td, .results-table th {
+  word-break: break-word;
+}
+
+/* JD Summary Card (now inside ResultsTable) */
+.jd-summary-card {
+  margin: 0 0 28px 0;      /* Reduced margin: space below, not above */
+  padding: 18px 24px;
+  background: #eef2fa;
+  border-radius: 9px;
+  box-shadow: 0 1px 8px rgba(87,110,250,0.04);
+}
+.jd-summary-card h3 {
+  margin-bottom: 12px;
+  font-weight: 630;
+  color: #234488;
+}
+.jd-summary-card b {
+  color: #1a284f;
+  font-weight: 600;
+}
+.jd-summary-card div {
+  margin-bottom: 6px;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 900px) {
+  .results-table-container { padding: 8px; }
+  .download-xls-btn { width: 100%; margin-bottom: 16px; }
+  .results-table th, .results-table td {
+    padding: 7px 7px;
+    font-size: 0.95em;
+    max-width: 110px;
+  }
+}
+@media (max-width: 630px) {
+  .results-table-title { font-size: 1rem; }
+}
+
+/* Popup overlay styling */
+.popup-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(39, 53, 87, 0.21);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.popup-content {
+  background: #fff;
+  border-radius: 7px;
+  padding: 28px 28px 18px 28px;
+  box-shadow: 0 8px 32px rgba(38, 49, 94, 0.21);
+  min-width: 260px;
+  min-height: 70px;
+  max-width: 480px;
+  max-height: 78vh;
+  overflow-y: auto;
+  text-align: left;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.popup-content h5 {
+  margin-bottom: 10px;
+  color: #204184;
+  font-weight: 600;
+}
+.popup-content button {
+  margin-top: 16px;
+  background: #305184;
+  color: #fff;
+  border: none;
+  outline: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.popup-content button:hover {
+  background: #22385c;
+}

@@ -1,0 +1,156 @@
+/* ==== APP-WIDE (GLOBAL) STYLES ==== */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+  font-size: 17px;
+  background: #f4f6fb;
+  color: #1d254f;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  background: none;
+}
+
+
+h1, h2, h3, h4, h5 {
+  color: #1a284f;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-bottom: 10px;
+}
+
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+button {
+  display: inline-block;
+  background-color: #305184;
+  color: #fff;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  margin: 7px 3px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.19s;
+}
+
+button:disabled {
+  background: #b8c7db;
+  color: #fff;
+  cursor: not-allowed;
+}
+button:hover:not(:disabled) {
+  background: #22385c;
+}
+
+input[type="text"], input[type="file"], input[type="number"], textarea, select {
+  font-size: 1rem;
+  padding: 9px 9px;
+  border-radius: 6px;
+  background: #f6f7fa;
+  border: 1.1px solid #d7dced;
+  margin: 5px 2px 18px 2px;
+  display: block;
+  width: 100%;
+}
+
+label {
+  font-weight: 510;
+  color: #305184;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.error, .ErrorMessage {
+  color: #ce3b53;
+  background: #fae9ec;
+  padding: 8px 13px;
+  border-radius: 6px;
+  margin-top: 9px;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.loading {
+  color: #1976c5;
+  font-size: 1.03rem;
+  margin-bottom: 7px;
+  margin-top: 7px;
+  font-style: italic;
+}
+
+hr {
+  margin: 24px 0;
+  border: none;
+  border-top: 1.5px solid #e3e6f2;
+}
+
+/* === JSW Branding Bar Styles === */
+.jsw-branding-bar {
+  display: flex;
+  align-items: center;
+  padding: 20px 0 26px 0;
+  /* Optionally: background-color: #f8fafe; border-bottom: 1px solid #e3e8f2; */
+  background: none;
+}
+.jsw-logo {
+  height: 48px;
+  width: auto;
+  margin-right: 16px;
+  display: inline-block;
+}
+.jsw-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #184296;
+  letter-spacing: 0.06em;
+  font-family: inherit;
+}
+
+/* Responsive tweaks for mobile */
+@media (max-width: 900px) {
+  .app-container {
+    padding: 10px !important;
+    font-size: 16px !important;
+  }
+  .jsw-title { font-size: 1.3rem; }
+}
+@media (max-width: 700px) {
+  body, .app-container {
+    padding: 10px !important;
+    font-size: 16px !important;
+  }
+  h1, h2, h3, h4 {
+    font-size: 1.05rem !important;
+  }
+  .jsw-title { font-size: 1.1rem; }
+}
+
+/* For cleaner selects and alignment in forms */
+select {
+  padding-right: 40px;
+  min-width: 100px;
+}
+
+/* Make form elements align in smaller widths */
+form > div, form label {
+  margin-bottom: 10px;
+}
