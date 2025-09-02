@@ -5,6 +5,7 @@ import json
 
 from fastapi import FastAPI, UploadFile, File, Form, Request, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 from app.file_parser import parse_resume
 from app.helper import process_resume_batch
@@ -19,7 +20,7 @@ from app.auth import (
     admin_required,
     AuthedUser,
 )
-from app.log_store import log_event, fetch_logs
+from app.log_store import log_event, fetch_logs, normalize_logs, rows_to_csv
 
 app = FastAPI(title="HR Screening Bot")
 
@@ -127,12 +128,21 @@ async def evaluate(
         # Log attempt (non-blocking)
         try:
             duration_ms = int((time.time() - start) * 1000)
+
             filenames = [f.filename for f in (resumes or [])]
+
+            # best-effort parse of weights sum
             weights_sum = None
             try:
                 weights_sum = sum(json.loads(weights).values()) if weights else None
             except Exception:
                 pass
+
+            # NEW: compute JD length in words (if we have text)
+            jd_length_words = (
+                len(jd_text.split()) 
+                if isinstance(locals().get("jd_text"), str) else None
+            )
 
             log_event(
                 username=getattr(user, "username", None),
@@ -148,7 +158,36 @@ async def evaluate(
                     "resume_filenames": filenames,
                     "remarkStyle": remarkStyle,
                     "weights_sum": weights_sum,
+                    # ✅ put it INSIDE meta
+                    "jd_length_words": jd_length_words,
                 },
             )
         except Exception:
             pass
+
+
+# --------------------------- NEW: Admin flat rows + CSV export ---------------------------
+
+# Tabular (one row per request) for Admin UI
+@app.get("/admin/logs/rows")
+def admin_logs_rows(
+    limit: int = 500,
+    offset: int = 0,
+    user: AuthedUser = Depends(admin_required)
+):
+    items = fetch_logs(limit=limit, offset=offset)
+    rows = normalize_logs(items)
+    return {"count": len(rows), "rows": rows}
+
+# CSV export (Excel-ready)
+@app.get("/admin/logs/export")
+def admin_logs_export(
+    limit: int = 5000,
+    offset: int = 0,
+    user: AuthedUser = Depends(admin_required)
+):
+    items = fetch_logs(limit=limit, offset=offset)
+    rows = normalize_logs(items)
+    csv_text = rows_to_csv(rows)
+    headers = {"Content-Disposition": 'attachment; filename="admin_usage_logs.csv"'}
+    return StreamingResponse(iter([csv_text]), media_type="text/csv", headers=headers)

@@ -118,3 +118,48 @@ def fetch_logs(limit: int = 200, offset: int = 0) -> List[Dict[str, Any]]:
             ]
         finally:
             con.close()
+
+
+# --- Admin log helpers: flatten + CSV export ---
+from typing import List, Dict  # reuse existing types; harmless if duplicated
+import csv, io
+
+FLAT_COLUMNS = [
+    "timestamp", "username", "role", "action", "success", "duration_ms",
+    "client_ip", "user_agent", "jd_filename", "resume_count",
+    "resume_filenames", "remarkStyle", "weights_sum", "jd_length_words",
+]
+
+def _meta(meta: Dict, key: str, default=None):
+    return (meta or {}).get(key, default)
+
+def normalize_logs(items: List[Dict]) -> List[Dict]:
+    rows = []
+    for it in items or []:
+        meta = it.get("meta") or {}
+        rows.append({
+            "timestamp": it.get("ts") or it.get("timestamp"),
+            "username": it.get("username"),
+            "role": it.get("role"),
+            "action": it.get("action"),
+            "success": bool(it.get("success")),
+            "duration_ms": it.get("duration_ms"),
+            "client_ip": _meta(meta, "client_ip"),
+            "user_agent": _meta(meta, "user_agent"),
+            "jd_filename": _meta(meta, "jd_filename"),
+            "resume_count": _meta(meta, "resume_count"),
+            "resume_filenames": "; ".join(_meta(meta, "resume_filenames", []) or []),
+            "remarkStyle": _meta(meta, "remarkStyle"),
+            "weights_sum": _meta(meta, "weights_sum"),
+            "jd_length_words": _meta(meta, "jd_length_words"),
+        })
+    return rows
+
+def rows_to_csv(rows: List[Dict], columns: List[str] = None) -> str:
+    cols = columns or FLAT_COLUMNS
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=cols, extrasaction="ignore")
+    w.writeheader()
+    for r in rows:
+        w.writerow({c: ("" if r.get(c) is None else r.get(c)) for c in cols})
+    return buf.getvalue()
