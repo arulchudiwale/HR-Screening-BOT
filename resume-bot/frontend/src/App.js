@@ -6,6 +6,8 @@ import LoginPage from './components/LoginPage';
 import { evaluateResumes } from './api/api';
 import jswLogo from './assets/jsw-logo.png';
 import './App.css';
+// at top with your other imports
+import AdminLogsTable from "./components/AdminLogsTable";
 
 /* ===================== AUTH HELPERS (ADD) ===================== */
 const API = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
@@ -234,21 +236,26 @@ function App() {
           {loading && <div>Processing...</div>}
           {results && (
             <>
-              <ResultsTable title="Accepted Resumes" data={results.accepted} />
-              <ResultsTable title="Rejected Resumes" data={results.rejected} />
+              {/* PASS BOTH LISTS SO EITHER TABLE CAN EXPORT A SINGLE WORKBOOK */}
+              <ResultsTable
+                title="Accepted Resumes"
+                data={results.accepted}
+                acceptedResults={results.accepted}   // NEW
+                rejectedResults={results.rejected}   // NEW
+              />
+              <ResultsTable
+                title="Rejected Resumes"
+                data={results.rejected}
+                acceptedResults={results.accepted}   // NEW
+                rejectedResults={results.rejected}   // NEW
+              />
             </>
           )}
 
           {/* ---- Admin-only Logs (ADD) ---- */}
-          {isAdmin && (
-            <div style={{ marginTop: 24 }}>
-              <h3>Admin: Usage Logs</h3>
-              <button onClick={loadAdminLogs} style={{ marginBottom: 8 }}>Refresh logs</button>
-              <pre style={{ maxHeight: 300, overflow: 'auto', background: '#f7f7f7', padding: 12 }}>
-                {adminLogs.length ? JSON.stringify(adminLogs, null, 2) : "No logs yet."}
-              </pre>
-            </div>
-          )}
+          {isAdmin && <AdminLogsTable apiBase={API} />}
+
+          
         </>
       )}
     </div>
