@@ -1,83 +1,136 @@
 // src/exportResultsExcel.js
 import * as XLSX from "xlsx";
 
-/** Turn one candidate into a flat row with safe fallbacks. */
-function mapRow(c = {}, idx = 0, status = "N/A") {
-  const name = c.name ?? c.candidateName ?? c.fullName ?? "N/A";
-  const fileName = c.fileName ?? c.filename ?? c.file ?? "N/A";
-  const experience = c.experience ?? c.exp ?? "N/A";
-  const education = c.education ?? c.edu ?? "N/A";
+/* ---------- helpers ---------- */
 
-  let skills = c.skillsMatched ?? c.skills ?? c.matchedSkills ?? "N/A";
+const toNum = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const sortByScoreDesc = (arr) =>
+  Array.isArray(arr) ? [...arr].sort((a, b) => toNum(b?.score) - toNum(a?.score)) : [];
+
+/** Map one candidate to a flat row with safe fallbacks that match our UI fields. */
+function mapRow(c = {}, idx = 0) {
+  const name =
+    c.name ?? c.candidateName ?? c.fullName ?? "";
+
+  const fileName =
+    c.filename ?? c.fileName ?? c.file ?? "";
+
+  const experience =
+    c.experience_summary ?? c.experience ?? "";
+
+  const education = c.education ?? "";
+
+  let skills = c.skills_matched;
   if (Array.isArray(skills)) skills = skills.join(", ");
+  if (skills == null) skills = ""; // handle undefined/null
 
-  const bd = c.breakdown ?? c.scoreBreakdown ?? c.scores ?? {};
-  const breakdownStr =
-    typeof bd === "string"
-      ? bd
-      : `Exp: ${bd.experience ?? bd.exp ?? 0}, Skills: ${bd.skills ?? 0}, Edu: ${bd.education ?? 0}, Ind: ${bd.industry ?? 0}`;
+  const expScore = toNum(c.experience_score);
+  const skillScore = toNum(c.skill_score ?? c.skills_score);
+  const eduScore = toNum(c.education_score);
+  const indScore = toNum(c.industry_score);
 
-  const remark = c.remark ?? c.comments ?? c.reason ?? "";
+  const breakdownStr = `Exp: ${expScore}, Skills: ${skillScore}, Edu: ${eduScore}, Ind: ${indScore}`;
 
   return {
     Rank: idx + 1,
-    Status: status,                       // Accepted / Rejected
     "File Name": fileName,
     Name: name,
-    Score: c.score ?? c.totalScore ?? 0,  // keep zeros; no filtering
+    Score: toNum(c.score),
     Experience: experience,
     Education: education,
     "Skills Matched": skills,
-    Remark: remark,
+    Remark: c.remark ?? "",
     "Score Breakdown": breakdownStr,
   };
 }
 
-/** Nice auto-width for columns. */
+// Default columns (also used to create header-only sheets when a list is empty)
+const COLUMNS = [
+  "Rank",
+  "File Name",
+  "Name",
+  "Score",
+  "Experience",
+  "Education",
+  "Skills Matched",
+  "Remark",
+  "Score Breakdown",
+];
+
 function autofit(ws, rows) {
-  const cols = Object.keys(rows[0] || {});
-  ws["!cols"] = cols.map((k) => {
+  const src = rows && rows.length ? rows : [Object.fromEntries(COLUMNS.map((k) => [k, ""]))];
+  ws["!cols"] = COLUMNS.map((k) => {
     const maxLen = Math.max(
       k.length,
-      ...rows.map((r) => (r[k] ? String(r[k]).length : 0))
+      ...src.map((r) => (r[k] ? String(r[k]).length : 0))
     );
     return { wch: Math.min(Math.max(10, maxLen + 2), 60) };
   });
 }
 
-/** Export one workbook with two sheets: Accepted & Rejected. */
-export function exportResultsExcel({ accepted = [], rejected = [] }, filename = null) {
-  const acceptedRows = accepted.map((c, i) => mapRow(c, i, "Accepted"));
-  const rejectedRows = rejected.map((c, i) => mapRow(c, i, "Rejected"));
+/* ---------- main: two-sheet export ---------- */
 
-  const safeAccepted = acceptedRows.length ? acceptedRows : [mapRow({}, 0, "Accepted")];
-  const safeRejected = rejectedRows.length ? rejectedRows : [mapRow({}, 0, "Rejected")];
+export function exportResultsExcel({ accepted = [], rejected = [] }, filename = null) {
+  // Sort first to ensure ranking is by score (desc), regardless of caller.
+  const sortedAccepted = sortByScoreDesc(accepted);
+  const sortedRejected = sortByScoreDesc(rejected);
+
+  const acceptedRows = sortedAccepted.map((c, i) => mapRow(c, i));
+  const rejectedRows = sortedRejected.map((c, i) => mapRow(c, i));
 
   const wb = XLSX.utils.book_new();
 
-  const wsA = XLSX.utils.json_to_sheet(safeAccepted);
-  autofit(wsA, safeAccepted);
+  // Always create the Accepted sheet
+  const wsA =
+    acceptedRows.length
+      ? XLSX.utils.json_to_sheet(acceptedRows, { header: COLUMNS })
+      : XLSX.utils.json_to_sheet([], { header: COLUMNS });
+  autofit(wsA, acceptedRows);
   XLSX.utils.book_append_sheet(wb, wsA, "Accepted");
 
-  const wsR = XLSX.utils.json_to_sheet(safeRejected);
-  autofit(wsR, safeRejected);
+  // Always create the Rejected sheet
+  const wsR =
+    rejectedRows.length
+      ? XLSX.utils.json_to_sheet(rejectedRows, { header: COLUMNS })
+      : XLSX.utils.json_to_sheet([], { header: COLUMNS });
+  autofit(wsR, rejectedRows);
   XLSX.utils.book_append_sheet(wb, wsR, "Rejected");
+
+  // Minimal verification log
+  // (Counts reflect the arrays passed in, before sorting/mapping.)
+  // eslint-disable-next-line no-console
+  console.log(
+    `[Excel Export] Accepted: ${Array.isArray(accepted) ? accepted.length : 0} | Rejected: ${
+      Array.isArray(rejected) ? rejected.length : 0
+    }`
+  );
 
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
   XLSX.writeFile(wb, filename || `resume-results-${stamp}.xlsx`);
 }
 
-/** Optional: single sheet with a Status column. */
+/* ---------- optional: single-sheet exporter (unchanged, kept for reference) ---------- */
 export function exportResultsSingleSheet({ accepted = [], rejected = [] }, filename = null) {
+  const sortedAccepted = sortByScoreDesc(accepted);
+  const sortedRejected = sortByScoreDesc(rejected);
+
   const rows = [
-    ...accepted.map((c, i) => mapRow(c, i, "Accepted")),
-    ...rejected.map((c, i) => mapRow(c, i + accepted.length, "Rejected")),
+    ...sortedAccepted.map((c, i) => ({ Status: "Accepted", ...mapRow(c, i) })),
+    ...sortedRejected.map((c, i) => ({ Status: "Rejected", ...mapRow(c, i + sortedAccepted.length) })),
   ];
-  const safe = rows.length ? rows : [mapRow({}, 0, "N/A")];
-  const ws = XLSX.utils.json_to_sheet(safe);
-  autofit(ws, safe);
+
+  const ws = rows.length
+    ? XLSX.utils.json_to_sheet(rows, { header: ["Status", ...COLUMNS] })
+    : XLSX.utils.json_to_sheet([], { header: ["Status", ...COLUMNS] });
+
+  autofit(ws, rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "All");
+
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
   XLSX.writeFile(wb, filename || `resume-results-all-${stamp}.xlsx`);
 }
