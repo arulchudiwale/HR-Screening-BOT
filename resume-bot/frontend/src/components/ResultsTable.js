@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
 import "./ResultsTable.css";
+import Gauge from "./Gauge";
 
 // NEW: import the combined exporter (two sheets in one file) or switch to SingleSheet if you prefer
 import { exportResultsExcel /* , exportResultsSingleSheet */ } from "../exportResultsExcel";
@@ -16,8 +17,10 @@ function ResultsTable({
   rejectedResults,
   accepted,
   rejected,
+  weights, // Added weights prop for gauge visualization
 }) {
   const [popup, setPopup] = useState(null);
+  const [expandedRows, setExpandedRows] = useState({});
 
   // small helper used for local & combined exports
   const sortByScore = (arr) =>
@@ -50,7 +53,9 @@ function ResultsTable({
         ? row.skills_matched.join(", ")
         : row?.skills_matched || "",
       Remark: row?.remark || "",
-      "Score Breakdown": `Exp: ${row?.experience_score ?? 0}, Skills: ${row?.skill_score ?? 0}, Edu: ${row?.education_score ?? 0}, Ind: ${row?.industry_score ?? 0}`,
+      "Score Breakdown": `Exp: ${row?.experience_score ?? 0}, Skills: ${row?.skill_score ?? 0}, Edu: ${
+        row?.education_score ?? 0
+      }, Ind: ${row?.industry_score ?? 0}`,
     }));
     const ws = XLSX.utils.json_to_sheet(sheetData);
     const wb = XLSX.utils.book_new();
@@ -89,7 +94,10 @@ function ResultsTable({
         onKeyDown={(e) => e.key === "Escape" && setPopup(null)}
       >
         <div className="popup-content" onClick={(e) => e.stopPropagation()}>
-          <h5>{popup.header}</h5>
+          <div className="popup-header">
+            <h5>{popup.header}</h5>
+            <button className="popup-close" onClick={() => setPopup(null)}>&times;</button>
+          </div>
           <pre style={{ whiteSpace: "pre-wrap" }}>{popup.value}</pre>
           <button onClick={() => setPopup(null)}>Close</button>
         </div>
@@ -132,92 +140,185 @@ function ResultsTable({
         </div>
       )}
 
-     
-      {/* Your original per-table export button (kept) */}
-      <button
-        className="download-xls-btn"
-        style={{
-          margin: "0 0 1rem 0",
-          padding: "0.5rem 1.25rem",
-          background: "#1976d2",
-          color: "#fff",
-          border: "none",
-          borderRadius: "4px",
-          cursor: "pointer",
-        }}
-        onClick={handleDownloadExcel}
-      >
-        Download as Excel
-      </button>
+      {/* Table toolbar with export buttons */}
+      <div className="table-toolbar">
+        <div className="table-actions">
+          {/* Show "Download All as Excel" only on the Accepted table */}
+          {showDownloadAll && (
+            <button
+              className="btn btn-primary"
+              onClick={handleDownloadAllExcel}
+            >
+              Download All as Excel
+            </button>
+          )}
+          
+          {/* Per-table export button */}
+          <button
+            className="btn btn-secondary download-xls-btn"
+            onClick={handleDownloadExcel}
+          >
+            Download as Excel
+          </button>
+        </div>
+      </div>
 
-      <table className="results-table">
-        <thead>
-          <tr>
-            <th className="rank-header">Rank</th>
-            <th>File Name</th>
-            <th>Name</th>
-            <th>Score</th>
-            <th>Experience</th>
-            <th>Education</th>
-            <th>Skills Matched</th>
-            <th>Remark</th>
-            <th>Score Breakdown</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedData.map((row, idx) => (
-            <tr key={`${row?.filename || "row"}-${idx}`}>
-              <td className="rank-cell">{idx + 1}</td>
-              <td onDoubleClick={() => handleDoubleClick("File Name", row?.filename)}>
-                {row?.filename || "—"}
-              </td>
-              <td onDoubleClick={() => handleDoubleClick("Name", row?.name)}>
-                {row?.name || "—"}
-              </td>
-              <td
-                className={`score-cell ${row?.score >= 70 ? "score-accept" : "score-reject"}`}
-                onDoubleClick={() => handleDoubleClick("Score", row?.score ?? 0)}
-              >
-                {typeof row?.score === "number" && !isNaN(row.score) ? row.score : 0}
-              </td>
-              <td onDoubleClick={() => handleDoubleClick("Experience", row?.experience_summary)}>
-                {row?.experience_summary || "—"}
-              </td>
-              <td onDoubleClick={() => handleDoubleClick("Education", row?.education)}>
-                {row?.education || "—"}
-              </td>
-              <td
-                onDoubleClick={() =>
-                  handleDoubleClick(
-                    "Skills Matched",
-                    Array.isArray(row?.skills_matched)
-                      ? row.skills_matched.join(", ")
-                      : row?.skills_matched || "—"
-                  )
-                }
-              >
-                {Array.isArray(row?.skills_matched)
-                  ? row.skills_matched.join(", ")
-                  : row?.skills_matched || "—"}
-              </td>
-              <td onDoubleClick={() => handleDoubleClick("Remark", row?.remark)}>
-                {row?.remark || "—"}
-              </td>
-              <td
-                onDoubleClick={() =>
-                  handleDoubleClick(
-                    "Score Breakdown",
-                    `Exp: ${row?.experience_score ?? 0}, Skills: ${row?.skill_score ?? 0}, Edu: ${row?.education_score ?? 0}, Ind: ${row?.industry_score ?? 0}`
-                  )
-                }
-                style={{ whiteSpace: "nowrap" }}
-              >
-                {`Exp: ${row?.experience_score ?? 0}, Skills: ${row?.skill_score ?? 0}, Edu: ${row?.education_score ?? 0}, Ind: ${row?.industry_score ?? 0}`}
-              </td>
+      <div className="table-container">
+        <table className="results-table">
+          <colgroup>
+            <col style={{width:'6%'}} />   {/* Rank */}
+            <col style={{width:'18%'}} />  {/* File Name */}
+            <col style={{width:'14%'}} />  {/* Name */}
+            <col style={{width:'8%'}} />   {/* Score */}
+            <col style={{width:'20%'}} />  {/* Experience - increased width */}
+            <col style={{width:'12%'}} />  {/* Education */}
+            <col style={{width:'18%'}} />  {/* Skills Matched */}
+            <col style={{width:'20%'}} />  {/* Remark - increased width */}
+          </colgroup>
+          <thead>
+            <tr>
+              <th className="rank-header">Rank</th>
+              <th>File Name</th>
+              <th>Name</th>
+              <th className="text-right">Score</th>
+              <th>Experience</th>
+              <th>Education</th>
+              <th>Skills Matched</th>
+              <th>Remark</th>
             </tr>
-          ))}
+          </thead>
+          <tbody>
+            {sortedData.map((row, idx) => {
+              const rowId = `${row?.filename || "row"}-${idx}`;
+              const isExpanded = expandedRows[rowId] || false;
+              
+              // Get the weights for gauges
+              const defaultWeights = { experience: 30, skills: 40, education: 20, industry: 10 };
+              const rowWeights = weights || defaultWeights;
+              
+              return (
+                <React.Fragment key={rowId}>
+                  <tr 
+                    className={`table-row ${idx % 2 === 0 ? 'table-row-even' : 'table-row-odd'}`}
+                  >
+                    <td className="rank-cell">{idx + 1}</td>
+                    <td onDoubleClick={() => handleDoubleClick("File Name", row?.filename)}>
+                      {row?.filename || "—"}
+                    </td>
+                    <td onDoubleClick={() => handleDoubleClick("Name", row?.name)}>
+                      {row?.name || "—"}
+                    </td>
+                    <td
+                      className={`score-cell text-right ${row?.score >= 70 ? "score-accept" : "score-reject"}`}
+                      onDoubleClick={() => handleDoubleClick("Score", row?.score ?? 0)}
+                    >
+                      {typeof row?.score === "number" && !isNaN(row.score) ? row.score : 0}
+                    </td>
+                    {/* Experience: plain wrapping, no clamp, no toggle */}
+                    <td 
+                      onDoubleClick={() => handleDoubleClick("Experience", row?.experience_summary)}
+                    >
+                      {row?.experience_summary || "—"}
+                    </td>
+                    {/* Education: already plain wrapping */}
+                    <td onDoubleClick={() => handleDoubleClick("Education", row?.education)}>
+                      {row?.education || "—"}
+                    </td>
+                    {/* Skills Matched: plain wrapping, no clamp */}
+                    <td
+                      onDoubleClick={() =>
+                        handleDoubleClick(
+                          "Skills Matched",
+                          Array.isArray(row?.skills_matched)
+                            ? row.skills_matched.join(", ")
+                            : row?.skills_matched || "—"
+                        )
+                      }
+                    >
+                      {Array.isArray(row?.skills_matched)
+                        ? row.skills_matched.join(", ")
+                        : row?.skills_matched || "—"}
+                    </td>
+                    {/* Remark: the ONLY cell with clamp + Show more/less */}
+                    <td 
+                      className="cell-remark"
+                      onDoubleClick={() => handleDoubleClick("Remark", row?.remark)}
+                    >
+                      <div className="clamp-text">
+                        {row?.remark || "—"}
+                      </div>
+                      <button 
+                        className="toggle-expand-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedRows(prev => ({
+                            ...prev, 
+                            [rowId]: !prev[rowId]
+                          }));
+                        }}
+                      >
+                        {isExpanded ? "Show less" : "Show more"}
+                      </button>
+                    </td>
+
+                  </tr>
+                  
+                  {/* Expandable row details */}
+                  {isExpanded && (
+                    <tr className="expanded-row-details">
+                      <td colSpan="8">
+                        <div className="expanded-content">
+                          <div className="gauges-container">
+                            <Gauge 
+                              value={row?.experience_score ?? 0} 
+                              maxValue={rowWeights.experience} 
+                              label="Experience" 
+                            />
+                            <Gauge 
+                              value={row?.skill_score ?? 0} 
+                              maxValue={rowWeights.skills} 
+                              label="Skills" 
+                            />
+                            <Gauge 
+                              value={row?.education_score ?? 0} 
+                              maxValue={rowWeights.education} 
+                              label="Education" 
+                            />
+                            <Gauge 
+                              value={row?.industry_score ?? 0} 
+                              maxValue={rowWeights.industry} 
+                              label="Industry" 
+                            />
+                          </div>
+                          <div className="weighting-info">
+                            Weighting used: Exp {rowWeights.experience}, Skills {rowWeights.skills}, 
+                            Edu {rowWeights.education}, Ind {rowWeights.industry} (sum {rowWeights.experience + rowWeights.skills + rowWeights.education + rowWeights.industry})
+                          </div>
+                          <div className="expanded-text">
+                            <div className="expanded-section">
+                              <h4>Experience</h4>
+                              <p>{row?.experience_summary || "—"}</p>
+                            </div>
+                            <div className="expanded-section">
+                              <h4>Skills Matched</h4>
+                              <p>{Array.isArray(row?.skills_matched) ? row.skills_matched.join(", ") : row?.skills_matched || "—"}</p>
+                            </div>
+                            <div className="expanded-section">
+                              <h4>Remark</h4>
+                              <p>{row?.remark || "—"}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
+        
         </tbody>
       </table>
+    </div>
       <Popup />
     </div>
   );

@@ -188,11 +188,20 @@ function App() {
   const isAdmin = !!user && user.role === "admin";
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto" }}>
-      {/* ---- JSW Paints LOGO/branding bar ---- */}
+    <div className="app-container">
+      {/* ---- Header with logo, title and user info ---- */}
       <div className="jsw-branding-bar">
-        <img src={jswLogo} alt="JSW Paints Logo" className="jsw-logo" />
-        <div className="jsw-title">JSW Paints</div>
+        <div className="logo-section">
+          <img src={jswLogo} alt="JSW Paints Logo" className="jsw-logo" />
+                  <div className="jsw-title">JSW Paints</div>
+        </div>
+        <h1 className="header-title">HRSBOT-Resume Screening</h1>
+        {loggedIn && user && (
+          <div className="user-info">
+            <span>Signed in as <b>{user.username}</b> ({user.role})</span>
+            <button onClick={handleLogout}>Logout</button>
+          </div>
+        )}
       </div>
 
       {/* Login gate: if not logged in, show only login form below logo */}
@@ -200,61 +209,65 @@ function App() {
         <LoginPage onLogin={handleLogin} error={loginError} />
       ) : (
         <>
-          {/* ---- Header + logout button ---- */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2>HRSBOT — Resume Screening</h2>
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              {user && <span style={{ fontSize: 14, opacity: 0.8 }}>
-                Signed in as <b>{user.username}</b> ({user.role})
-              </span>}
-              <button onClick={handleLogout} style={{ height: 38, marginLeft: 10 }}>Logout</button>
-            </div>
-          </div>
 
           {/* ---- Main Form ---- */}
-          <form onSubmit={handleSubmit}>
-            <FileUpload label="Upload JD File" multiple={false} accept=".pdf,.docx" onChange={handleJDChange} />
-            <FileUpload label="Upload Resume(s)" multiple={true} accept=".pdf,.docx" onChange={handleResumeChange} />
-            <WeightsForm weights={weights} setWeights={setWeights} />
-            <div>
-              <label>Remark Style: </label>
-              <select value={remarkStyle} onChange={e => setRemarkStyle(e.target.value)}>
-                <option value="Professional">Professional</option>
-                <option value="Friendly">Friendly</option>
-                <option value="Critical">Critical</option>
-              </select>
-            </div>
-            <button type="submit" disabled={loading}>Evaluate</button>
-          </form>
+          <div className="card">
+            <h3>Upload Documents</h3>
+            <form onSubmit={handleSubmit}>
+              <FileUpload label="Upload JD File" multiple={false} accept=".pdf,.docx" onChange={handleJDChange} />
+              <FileUpload label="Upload Resume(s)" multiple={true} accept=".pdf,.docx" onChange={handleResumeChange} />
+              <WeightsForm weights={weights} setWeights={setWeights} />
+              <div className="form-group">
+                <label className="form-label">Remark Style: </label>
+                <select 
+                  className="form-control" 
+                  value={remarkStyle} 
+                  onChange={e => setRemarkStyle(e.target.value)}
+                >
+                  <option value="Professional">Professional</option>
+                  <option value="Friendly">Friendly</option>
+                  <option value="Critical">Critical</option>
+                </select>
+              </div>
+              <button type="submit" disabled={loading} className="btn-primary">Evaluate</button>
+            </form>
+          </div>
 
           {/* ---- Status/Results ---- */}
           {error && (
-            <div className="error" style={{whiteSpace: 'pre-wrap'}}>
+            <div className="error">
               {error}
             </div>
           )}
-          {loading && <div>Processing...</div>}
+          {loading && <div className="loading">Processing...</div>}
           {results && (
             <>
               {/* PASS BOTH LISTS SO EITHER TABLE CAN EXPORT A SINGLE WORKBOOK */}
-              <ResultsTable
-                title="Accepted Resumes"
-                data={results.accepted}
-                acceptedResults={results.accepted}   // NEW
-                rejectedResults={results.rejected}   // NEW
-              />
-              <ResultsTable
-                title="Rejected Resumes"
-                data={results.rejected}
-                acceptedResults={results.accepted}   // NEW
-                rejectedResults={results.rejected}   // NEW
-              />
+              <div className="card">
+                <ResultsTable
+                  title="Accepted Resumes"
+                  data={results.accepted}
+                  acceptedResults={results.accepted}   // NEW
+                  rejectedResults={results.rejected}   // NEW
+                />
+              </div>
+              <div className="card">
+                <ResultsTable
+                  title="Rejected Resumes"
+                  data={results.rejected}
+                  acceptedResults={results.accepted}   // NEW
+                  rejectedResults={results.rejected}   // NEW
+                />
+              </div>
             </>
           )}
 
           {/* ---- Admin-only Logs (ADD) ---- */}
-          {isAdmin && <AdminLogsTable apiBase={API} />}
-
+          {isAdmin && (
+            <div className="card">
+              <AdminLogsTable apiBase={API} />
+            </div>
+          )}
           
         </>
       )}
